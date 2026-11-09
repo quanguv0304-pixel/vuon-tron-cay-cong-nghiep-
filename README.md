@@ -37,7 +37,7 @@ Hệ thống thu thập dữ liệu, xử lý trên ESP32, truyền thông qua M
 ## 5. Liên kết dự án
 
 - Wokwi:(https://wokwi.com/projects/480227637853804545)
-- GitHub: https://github.com/quanguv0304-pixel/vuon-tron-cay-cong-nghiep-/edit/main/README.md
+- GitHub: https://github.com/quanguv0304-pixel/vuon-tron-cay-cong-nghiep
 
 ## 6. Tác giả
 
