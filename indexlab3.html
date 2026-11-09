@@ -1,0 +1,278 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Giám sát môi trường vườn cây IoT</title>
+
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #eef5ee;
+            margin: 0;
+            padding: 25px;
+            color: #263b2b;
+        }
+
+        .container {
+            max-width: 850px;
+            margin: auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        header h1 {
+            color: #267344;
+        }
+
+        .status {
+            text-align: center;
+            padding: 12px;
+            background: white;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            font-weight: bold;
+        }
+
+        .cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 25px;
+            text-align: center;
+            border-radius: 15px;
+            box-shadow: 0 3px 10px #0001;
+        }
+
+        .card h2 {
+            color: #42634a;
+        }
+
+        .value {
+            font-size: 38px;
+            font-weight: bold;
+            color: #23834b;
+            margin: 20px 0;
+        }
+
+        .controls {
+            background: white;
+            margin-top: 25px;
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 3px 10px #0001;
+        }
+
+        .device {
+            margin: 25px 0;
+        }
+
+        button {
+            padding: 12px 25px;
+            margin: 7px;
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .on {
+            background: #219653;
+        }
+
+        .off {
+            background: #d64545;
+        }
+
+        #message {
+            color: #267344;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #777;
+            font-size: 13px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <header>
+        <h1>HỆ THỐNG GIÁM SÁT VƯỜN CÂY</h1>
+        <p>ESP32 - DHT22 - FREERTOS - MQTT</p>
+    </header>
+
+    <div class="status" id="connection">
+        Đang kết nối MQTT...
+    </div>
+
+    <div class="cards">
+
+        <div class="card">
+            <h2>Nhiệt độ</h2>
+            <div class="value" id="temperature">-- °C</div>
+            <p>Nhiệt độ môi trường</p>
+        </div>
+
+        <div class="card">
+            <h2>Độ ẩm</h2>
+            <div class="value" id="humidity">-- %</div>
+            <p>Độ ẩm không khí</p>
+        </div>
+
+    </div>
+
+    <div class="controls">
+
+        <h2>ĐIỀU KHIỂN THIẾT BỊ</h2>
+
+        <div class="device">
+            <h3>Máy bơm - LED xanh</h3>
+
+            <button class="on" onclick="sendCommand('pump', 'ON')">
+                BẬT MÁY BƠM
+            </button>
+
+            <button class="off" onclick="sendCommand('pump', 'OFF')">
+                TẮT MÁY BƠM
+            </button>
+        </div>
+
+        <hr>
+
+        <div class="device">
+            <h3>Quạt - LED đỏ</h3>
+
+            <button class="on" onclick="sendCommand('fan', 'ON')">
+                BẬT QUẠT
+            </button>
+
+            <button class="off" onclick="sendCommand('fan', 'OFF')">
+                TẮT QUẠT
+            </button>
+        </div>
+
+        <p id="message">Chưa gửi lệnh điều khiển.</p>
+
+    </div>
+
+    <footer>
+        Hệ thống giám sát và điều khiển môi trường vườn cây IoT
+    </footer>
+
+</div>
+
+<script>
+
+    // Thông tin kết nối MQTT
+    const broker = "wss://broker.hivemq.com:8884/mqtt";
+
+    // Các MQTT Topic
+    const topics = {
+        temperature: "vuoncay/quanguv/temperature",
+        humidity: "vuoncay/quanguv/humidity",
+        pump: "vuoncay/quanguv/pump",
+        fan: "vuoncay/quanguv/fan"
+    };
+
+    // Kết nối MQTT Broker
+    const client = mqtt.connect(broker);
+
+    // Khi kết nối thành công
+    client.on("connect", function () {
+
+        document.getElementById("connection").innerText =
+            "Đã kết nối MQTT Broker";
+
+        client.subscribe([
+            topics.temperature,
+            topics.humidity
+        ]);
+
+    });
+
+    // Khi nhận dữ liệu từ ESP32
+    client.on("message", function (topic, message) {
+
+        const value = message.toString();
+
+        if (topic === topics.temperature) {
+            document.getElementById("temperature").innerText =
+                value + " °C";
+        }
+
+        if (topic === topics.humidity) {
+            document.getElementById("humidity").innerText =
+                value + " %";
+        }
+
+    });
+
+    // Xử lý lỗi kết nối
+    client.on("error", function (error) {
+
+        document.getElementById("connection").innerText =
+            "Lỗi kết nối MQTT";
+
+        console.log(error);
+
+    });
+
+    // Khi MQTT mất kết nối
+    client.on("offline", function () {
+
+        document.getElementById("connection").innerText =
+            "MQTT mất kết nối";
+
+    });
+
+    // Gửi lệnh điều khiển thiết bị
+    function sendCommand(device, command) {
+
+        if (!client.connected) {
+
+            document.getElementById("message").innerText =
+                "Chưa kết nối MQTT!";
+
+            return;
+
+        }
+
+        client.publish(topics[device], command);
+
+        document.getElementById("message").innerText =
+            "Đã gửi lệnh " + command + " đến " + device;
+
+    }
+
+</script>
+
+</body>
+</html>
